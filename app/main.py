@@ -1,6 +1,8 @@
+
 from fastapi import FastAPI
 
 from app.api.hosts import router as hosts_router
+from app.api.rules import router as rules_router
 
 
 app = FastAPI(
@@ -16,3 +18,4 @@ def health_check():
 
 
 app.include_router(hosts_router)
+app.include_router(rules_router)
