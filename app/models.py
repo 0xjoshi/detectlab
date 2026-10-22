@@ -1,5 +1,7 @@
 
-from sqlalchemy import Boolean, String, Text
+from datetime import datetime
+
+from sqlalchemy import Boolean, DateTime, ForeignKey, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -34,3 +36,25 @@ class Rule(Base):
     enabled: Mapped[bool] = mapped_column(
         Boolean, default=True, nullable=False
     )
+
+
+class Event(Base):
+    __tablename__ = "events"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    host_id: Mapped[int] = mapped_column(
+        ForeignKey("hosts.id"), nullable=False, index=True
+    )
+
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, index=True
+    )
+
+    event_type: Mapped[str] = mapped_column(
+        String(100), nullable=False, index=True
+    )
+
+    event_data: Mapped[dict] = mapped_column(JSON, nullable=False)
+
+    raw_event: Mapped[dict] = mapped_column(JSON, nullable=False)
