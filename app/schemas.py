@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class HostCreate(BaseModel):
@@ -62,3 +62,13 @@ class EventResponse(BaseModel):
     raw_event: dict[str, Any]
 
     model_config = ConfigDict(from_attributes=True)
+
+class DetectionEvaluationRequest(BaseModel):
+    evaluation_time: datetime
+
+    @field_validator("evaluation_time")
+    @classmethod
+    def require_timezone(cls, value: datetime) -> datetime:
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("evaluation_time must include a timezone.")
+        return value

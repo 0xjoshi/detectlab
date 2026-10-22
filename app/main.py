@@ -1,9 +1,9 @@
-
 from fastapi import FastAPI
 
 from app.api.events import router as events_router
 from app.api.hosts import router as hosts_router
 from app.api.rules import router as rules_router
+from app.api.detections import router as detections_router
 
 
 app = FastAPI(
@@ -21,3 +21,4 @@ def health_check():
 app.include_router(hosts_router)
 app.include_router(rules_router)
 app.include_router(events_router)
+app.include_router(detections_router)
