@@ -100,4 +100,3 @@ def test_validation_rejects_empty_expected_host():
             expected_host=" ",
             detections=[],
         )
-
