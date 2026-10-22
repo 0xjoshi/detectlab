@@ -72,3 +72,13 @@ class DetectionEvaluationRequest(BaseModel):
         if value.tzinfo is None or value.utcoffset() is None:
             raise ValueError("evaluation_time must include a timezone.")
         return value
+class DetectionValidationRequest(DetectionEvaluationRequest):
+    expected_rule_id: str = Field(min_length=1, max_length=100)
+    expected_host: str = Field(min_length=1, max_length=255)
+
+    @field_validator("expected_rule_id", "expected_host")
+    @classmethod
+    def require_non_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("This field must not be blank.")
+        return value

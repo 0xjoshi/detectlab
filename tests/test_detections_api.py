@@ -133,3 +133,52 @@ def test_evaluate_endpoint_does_not_persist_results(client):
 
     assert response.status_code == 200
     assert len(response.json()["detections"]) == 1
+
+def test_validate_endpoint_returns_pass_when_rule_and_host_match(client):
+    response = client.post(
+        "/api/v1/detections/validate",
+        json={
+            "evaluation_time": "2026-10-21T05:30:00Z",
+            "expected_rule_id": "DET-001",
+            "expected_host": "WIN11-LAB",
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "PASS"
+    assert data["matched"] is True
+    assert data["expected_rule_id"] == "DET-001"
+    assert data["expected_host"] == "WIN11-LAB"
+    assert len(data["detections"]) == 1
+    assert data["detections"][0]["count"] == 3
+
+
+def test_validate_endpoint_returns_fail_when_rule_does_not_match(client):
+    response = client.post(
+        "/api/v1/detections/validate",
+        json={
+            "evaluation_time": "2026-10-21T05:30:00Z",
+            "expected_rule_id": "DET-999",
+            "expected_host": "WIN11-LAB",
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "FAIL"
+    assert data["matched"] is False
+    assert data["expected_rule_id"] == "DET-999"
+
+
+def test_validate_endpoint_rejects_naive_evaluation_time(client):
+    response = client.post(
+        "/api/v1/detections/validate",
+        json={
+            "evaluation_time": "2026-10-21T05:30:00",
+            "expected_rule_id": "DET-001",
+            "expected_host": "WIN11-LAB",
+        },
+    )
+
+    assert response.status_code == 422
