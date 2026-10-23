@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import yaml
@@ -14,38 +14,13 @@ def evaluate_enabled_rules(
 ) -> dict[str, Any]:
     """Evaluate enabled threshold rules against stored events."""
 
-    if evaluation_time.tzinfo is None or evaluation_time.utcoffset() is None:
+    if (
+        evaluation_time.tzinfo is None
+        or evaluation_time.utcoffset() is None
+    ):
         raise ValueError("Evaluation time must include a timezone.")
 
     evaluation_time = evaluation_time.astimezone(timezone.utc)
-
-    stored_events = (
-        db.query(Event, Host.hostname)
-        .join(Host, Event.host_id == Host.id)
-        .all()
-    )
-
-    events = []
-
-    for event, hostname in stored_events:
-        timestamp = event.timestamp
-
-        # SQLite may return timestamps without timezone information.
-        # Stored event timestamps are treated as UTC in that case.
-        if timestamp.tzinfo is None or timestamp.utcoffset() is None:
-            timestamp = timestamp.replace(tzinfo=timezone.utc)
-        else:
-            timestamp = timestamp.astimezone(timezone.utc)
-
-        events.append(
-            {
-                "host": hostname,
-                "timestamp": timestamp,
-                "event_type": event.event_type,
-                "event_data": event.event_data,
-                "raw_event": event.raw_event,
-            }
-        )
 
     rules = (
         db.query(Rule)
@@ -54,10 +29,11 @@ def evaluate_enabled_rules(
         .all()
     )
 
-    detections = []
-    rules_evaluated = 0
+    prepared_rules = []
     rules_skipped = []
+    max_window_seconds = 0
 
+    # Parse rules first to determine the oldest event needed.
     for stored_rule in rules:
         try:
             definition = yaml.safe_load(stored_rule.definition_yaml)
@@ -80,7 +56,6 @@ def evaluate_enabled_rules(
             continue
 
         condition = definition.get("condition")
-
         if not isinstance(condition, dict):
             rules_skipped.append(
                 {
@@ -99,6 +74,59 @@ def evaluate_enabled_rules(
             )
             continue
 
+        window_seconds = condition.get("window_seconds")
+        if type(window_seconds) is int and window_seconds > 0:
+            max_window_seconds = max(
+                max_window_seconds,
+                window_seconds,
+            )
+
+        prepared_rules.append((stored_rule, definition))
+
+    events = []
+
+    if max_window_seconds > 0:
+        cutoff = evaluation_time - timedelta(
+            seconds=max_window_seconds
+        )
+
+        # SQLite stores timezone-aware DateTime values as naive UTC.
+        # Query with a naive UTC cutoff, then normalize timestamps
+        # retrieved from the database to aware UTC.
+        cutoff_for_query = cutoff.replace(tzinfo=None)
+
+        stored_events = (
+            db.query(Event, Host.hostname)
+            .join(Host, Event.host_id == Host.id)
+            .filter(Event.timestamp > cutoff_for_query)
+            .all()
+        )
+
+        for event, hostname in stored_events:
+            timestamp = event.timestamp
+
+            if (
+                timestamp.tzinfo is None
+                or timestamp.utcoffset() is None
+            ):
+                timestamp = timestamp.replace(tzinfo=timezone.utc)
+            else:
+                timestamp = timestamp.astimezone(timezone.utc)
+
+            events.append(
+                {
+                    "host": hostname,
+                    "timestamp": timestamp,
+                    "event_type": event.event_type,
+                    "event_data": event.event_data,
+                    "raw_event": event.raw_event,
+                }
+            )
+
+    detections = []
+    rules_evaluated = 0
+
+    for stored_rule, definition in prepared_rules:
         try:
             rule_detections = evaluate_threshold(
                 rule=definition,

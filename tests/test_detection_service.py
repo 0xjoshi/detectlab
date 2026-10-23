@@ -1,4 +1,3 @@
-
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -35,7 +34,6 @@ def db():
             ip_address="192.168.56.10",
         )
     )
-
     session.commit()
 
     try:
@@ -175,6 +173,7 @@ def test_naive_evaluation_time_is_rejected(db):
     with pytest.raises(ValueError, match="must include a timezone"):
         evaluate_enabled_rules(db, evaluation_time)
 
+
 def test_event_exactly_at_window_start_is_excluded(db):
     evaluation_time = datetime(
         2026, 10, 23, 12, 0, tzinfo=timezone.utc
@@ -205,3 +204,104 @@ def test_event_at_evaluation_time_is_included(db):
     assert result["rules_evaluated"] == 1
     assert len(result["detections"]) == 1
     assert result["detections"][0]["count"] == 3
+
+
+def test_rules_with_different_event_types_are_evaluated_independently(db):
+    evaluation_time = datetime(
+        2026, 10, 23, 12, 0, tzinfo=timezone.utc
+    )
+    make_rule(db, rule_id="DET-AUTH", count=3)
+
+    process_definition = {
+        "id": "DET-PROC",
+        "name": "Repeated Process Starts",
+        "description": "Detect repeated process starts",
+        "platform": "windows",
+        "severity": "medium",
+        "condition": {
+            "type": "threshold",
+            "event_type": "process_start",
+            "count": 2,
+            "window_seconds": 60,
+            "group_by": ["host", "user"],
+        },
+    }
+    db.add(
+        Rule(
+            rule_id="DET-PROC",
+            name=process_definition["name"],
+            description=process_definition["description"],
+            platform=process_definition["platform"],
+            definition_yaml=yaml.safe_dump(process_definition),
+            severity=process_definition["severity"],
+            enabled=True,
+        )
+    )
+    db.commit()
+
+    for seconds_ago in (30, 20, 10):
+        add_event(db, evaluation_time - timedelta(seconds=seconds_ago))
+
+    for seconds_ago in (20, 10):
+        add_event(
+            db,
+            evaluation_time - timedelta(seconds=seconds_ago),
+            event_type="process_start",
+        )
+
+    result = evaluate_enabled_rules(db, evaluation_time)
+
+    assert result["rules_evaluated"] == 2
+    detections_by_rule = {
+        detection["rule_id"]: detection
+        for detection in result["detections"]
+    }
+    assert detections_by_rule["DET-AUTH"]["count"] == 3
+    assert detections_by_rule["DET-PROC"]["count"] == 2
+
+
+def test_rules_with_different_windows_use_their_own_windows(db):
+    evaluation_time = datetime(
+        2026, 10, 23, 12, 0, tzinfo=timezone.utc
+    )
+    make_rule(db, rule_id="DET-SHORT", window_seconds=20, count=3)
+
+    long_definition = {
+        "id": "DET-LONG",
+        "name": "Long Window Failed Logins",
+        "description": "Detect failures over a longer window",
+        "platform": "windows",
+        "severity": "medium",
+        "condition": {
+            "type": "threshold",
+            "event_type": "authentication_failure",
+            "count": 3,
+            "window_seconds": 60,
+            "group_by": ["host", "user"],
+        },
+    }
+    db.add(
+        Rule(
+            rule_id="DET-LONG",
+            name=long_definition["name"],
+            description=long_definition["description"],
+            platform=long_definition["platform"],
+            definition_yaml=yaml.safe_dump(long_definition),
+            severity=long_definition["severity"],
+            enabled=True,
+        )
+    )
+    db.commit()
+
+    for seconds_ago in (50, 30, 10):
+        add_event(db, evaluation_time - timedelta(seconds=seconds_ago))
+
+    result = evaluate_enabled_rules(db, evaluation_time)
+
+    assert result["rules_evaluated"] == 2
+    detections_by_rule = {
+        detection["rule_id"]: detection
+        for detection in result["detections"]
+    }
+    assert "DET-SHORT" not in detections_by_rule
+    assert detections_by_rule["DET-LONG"]["count"] == 3
