@@ -181,3 +181,23 @@ class ScenarioRunHistoryResponse(BaseModel):
     total: int
     limit: int
     offset: int
+    
+class RuleCoverageItem(BaseModel):
+    rule_id: str
+    rule_name: str
+    enabled: bool
+    total_runs: int
+    pass_count: int
+    fail_count: int
+    distinct_scenarios: int
+    latest_status: str | None = None
+    latest_run_at: datetime | None = None
+    coverage_status: str
+
+
+class DetectionCoverageResponse(BaseModel):
+    total_rules: int
+    tested_rules: int
+    untested_rules: int
+    coverage_percent: float
+    rules: list[RuleCoverageItem]
