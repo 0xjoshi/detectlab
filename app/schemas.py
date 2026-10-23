@@ -201,3 +201,22 @@ class DetectionCoverageResponse(BaseModel):
     untested_rules: int
     coverage_percent: float
     rules: list[RuleCoverageItem]
+
+
+class RuleRegressionItem(BaseModel):
+    rule_id: str
+    rule_name: str
+    enabled: bool
+    total_runs: int
+    latest_status: str | None = None
+    latest_run_at: datetime | None = None
+    latest_scenario_id: str | None = None
+    regression_status: str
+
+
+class RegressionReportResponse(BaseModel):
+    total_rules: int
+    regression_rules: int
+    healthy_rules: int
+    untested_rules: int
+    rules: list[RuleRegressionItem]
