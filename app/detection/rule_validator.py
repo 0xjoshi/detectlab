@@ -109,6 +109,11 @@ def validate_rule_definition(
                 "Threshold group_by must be a non-empty list of field names."
             )
 
+        if len(set(group_by)) != len(group_by):
+            raise RuleValidationError(
+                "Threshold group_by must not contain duplicate field names."
+            )
+
     elif condition_type == "match":
         field = condition.get("field")
         value = condition.get("value")

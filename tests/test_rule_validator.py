@@ -98,3 +98,24 @@ def test_invalid_threshold_window_is_rejected():
     )
     with pytest.raises(RuleValidationError, match="window_seconds"):
         validate_rule_definition(invalid_yaml, "DET-001")
+
+
+@pytest.mark.parametrize(
+    ("replacement", "error_match"),
+    [
+        ("group_by: []", "non-empty list"),
+        ("group_by: [host, host]", "duplicate"),
+        ("group_by: [host, user, host]", "duplicate"),
+    ],
+)
+def test_threshold_rule_rejects_invalid_group_by(
+    replacement,
+    error_match,
+):
+    invalid_yaml = VALID_YAML.replace(
+        "group_by: [host, user]",
+        replacement,
+    )
+
+    with pytest.raises(RuleValidationError, match=error_match):
+        validate_rule_definition(invalid_yaml, "DET-001")
