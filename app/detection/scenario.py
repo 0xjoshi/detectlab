@@ -4,17 +4,19 @@ from typing import Any
 
 import yaml
 from fastapi import HTTPException
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 
 from app.detection.engine import evaluate_threshold
 from app.detection.validation import validate_detection
-from app.models import Event, Host, Rule
+from app.models import Event, Host, Rule, ScenarioRun
 from app.schemas import ScenarioRunRequest
 
 
 def run_scenario(
     db: Session,
     request: ScenarioRunRequest,
+    scenario_name: str | None = None,
 ) -> dict[str, Any]:
     """Ingest scenario events and validate the expected detection."""
 
@@ -57,7 +59,7 @@ def run_scenario(
     if not isinstance(definition, dict):
         raise HTTPException(
             status_code=422,
-            detail="The expected rule definition must be a YAML mapping.",
+            detail="The rule definition must be a YAML mapping.",
         )
 
     if definition.get("id") != stored_rule.rule_id:
@@ -134,16 +136,32 @@ def run_scenario(
             detections=detections,
         )
 
+        # Save the run and its events in the same transaction.
+        run_record = ScenarioRun(
+            scenario_id=request.scenario_id,
+            scenario_name=scenario_name,
+            expected_rule_id=request.expected_rule_id,
+            expected_host=request.expected_host,
+            evaluation_time=evaluation_time,
+            status=validation["status"],
+            matched=validation["matched"],
+            events_ingested=len(created_events),
+            event_ids=[event.id for event in created_events],
+            detections=jsonable_encoder(detections),
+        )
+
+        db.add(run_record)
+        db.flush()
         db.commit()
 
     except Exception:
-        # Any failure during ingestion, evaluation, or commit
-        # must roll back the scenario transaction.
         db.rollback()
         raise
 
     return {
+        "run_id": run_record.id,
         "scenario_id": request.scenario_id,
+        "scenario_name": scenario_name,
         **validation,
         "evaluation_time": evaluation_time,
         "events_ingested": len(created_events),

@@ -1,5 +1,5 @@
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, JSON, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
@@ -58,3 +58,38 @@ class Event(Base):
     event_data: Mapped[dict] = mapped_column(JSON, nullable=False)
 
     raw_event: Mapped[dict] = mapped_column(JSON, nullable=False)
+
+
+class ScenarioRun(Base):
+    __tablename__ = "scenario_runs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    scenario_id: Mapped[str] = mapped_column(
+        String(100), nullable=False, index=True
+    )
+    scenario_name: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
+    )
+    expected_rule_id: Mapped[str] = mapped_column(
+        String(100), nullable=False, index=True
+    )
+    expected_host: Mapped[str] = mapped_column(
+        String(255), nullable=False, index=True
+    )
+
+    evaluation_time: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    status: Mapped[str] = mapped_column(String(20), nullable=False)
+    matched: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    events_ingested: Mapped[int] = mapped_column(nullable=False)
+
+    event_ids: Mapped[list] = mapped_column(JSON, nullable=False)
+    detections: Mapped[list] = mapped_column(JSON, nullable=False)

@@ -158,3 +158,26 @@ class ScenarioLibraryDefinition(BaseModel):
         if not value.strip():
             raise ValueError("This field must not be blank.")
         return value
+
+class ScenarioRunHistoryItem(BaseModel):
+    run_id: int = Field(validation_alias="id")
+    scenario_id: str
+    scenario_name: str | None = None
+    expected_rule_id: str
+    expected_host: str
+    evaluation_time: datetime
+    created_at: datetime
+    status: str
+    matched: bool
+    events_ingested: int
+    event_ids: list[int]
+    detections: list[dict[str, Any]]
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ScenarioRunHistoryResponse(BaseModel):
+    items: list[ScenarioRunHistoryItem]
+    total: int
+    limit: int
+    offset: int

@@ -139,6 +139,8 @@ def run_library_scenario(
         ],
     )
 
-    result = run_scenario(db=db, request=request)
-    result["scenario_name"] = definition.name
-    return result
+    return run_scenario(
+        db=db,
+        request=request,
+        scenario_name=definition.name,
+    )

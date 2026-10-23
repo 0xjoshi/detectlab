@@ -1,6 +1,6 @@
 
 from datetime import datetime, timedelta, timezone
-
+from app.models import Host, Rule, ScenarioRun
 import pytest
 import yaml
 from fastapi.testclient import TestClient
@@ -172,3 +172,96 @@ def test_run_scenario_endpoint_returns_404_for_unknown_host(client):
     )
 
     assert response.status_code == 404
+
+def test_scenario_run_is_saved_and_appears_in_history(client):
+    run_response = client.post(
+        "/api/v1/scenarios/run",
+        json=make_payload(),
+    )
+
+    assert run_response.status_code == 200
+    run_data = run_response.json()
+    run_id = run_data["run_id"]
+
+    history_response = client.get("/api/v1/scenarios/runs")
+
+    assert history_response.status_code == 200
+    history = history_response.json()
+    assert history["total"] == 1
+    assert len(history["items"]) == 1
+
+    saved_run = history["items"][0]
+    assert saved_run["run_id"] == run_id
+    assert saved_run["scenario_id"] == "SCN-API-001"
+    assert saved_run["status"] == "PASS"
+    assert saved_run["matched"] is True
+    assert saved_run["events_ingested"] == 3
+    assert len(saved_run["event_ids"]) == 3
+
+
+def test_failed_scenario_run_is_saved_in_history(client):
+    response = client.post(
+        "/api/v1/scenarios/run",
+        json=make_payload(event_count=2),
+    )
+
+    assert response.status_code == 200
+    run_id = response.json()["run_id"]
+
+    history_response = client.get("/api/v1/scenarios/runs")
+
+    assert history_response.status_code == 200
+    history = history_response.json()
+    assert history["total"] == 1
+
+    saved_run = history["items"][0]
+    assert saved_run["run_id"] == run_id
+    assert saved_run["status"] == "FAIL"
+    assert saved_run["matched"] is False
+    assert saved_run["events_ingested"] == 2
+
+
+def test_get_scenario_run_returns_404_for_unknown_id(client):
+    response = client.get("/api/v1/scenarios/runs/9999")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == (
+        "Scenario run 9999 was not found."
+    )
+
+
+def test_scenario_run_history_pagination(client):
+    first = client.post(
+        "/api/v1/scenarios/run",
+        json=make_payload(),
+    )
+    second = client.post(
+        "/api/v1/scenarios/run",
+        json=make_payload(event_count=2),
+    )
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+
+    page_one = client.get(
+        "/api/v1/scenarios/runs",
+        params={"limit": 1, "offset": 0},
+    )
+    page_two = client.get(
+        "/api/v1/scenarios/runs",
+        params={"limit": 1, "offset": 1},
+    )
+
+    assert page_one.status_code == 200
+    assert page_two.status_code == 200
+
+    first_page = page_one.json()
+    second_page = page_two.json()
+
+    assert first_page["total"] == 2
+    assert len(first_page["items"]) == 1
+    assert len(second_page["items"]) == 1
+
+    # Newest run should appear first.
+    assert first_page["items"][0]["run_id"] == second.json()["run_id"]
+    assert second_page["items"][0]["run_id"] == first.json()["run_id"]
