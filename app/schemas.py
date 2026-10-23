@@ -1,4 +1,3 @@
-
 from datetime import datetime
 from typing import Any
 
@@ -72,6 +71,8 @@ class DetectionEvaluationRequest(BaseModel):
         if value.tzinfo is None or value.utcoffset() is None:
             raise ValueError("evaluation_time must include a timezone.")
         return value
+
+
 class DetectionValidationRequest(DetectionEvaluationRequest):
     expected_rule_id: str = Field(min_length=1, max_length=100)
     expected_host: str = Field(min_length=1, max_length=255)
@@ -81,4 +82,40 @@ class DetectionValidationRequest(DetectionEvaluationRequest):
     def require_non_blank(cls, value: str) -> str:
         if not value.strip():
             raise ValueError("This field must not be blank.")
+        return value
+
+
+class ScenarioEventInput(BaseModel):
+    timestamp: datetime
+    event_type: str = Field(min_length=1, max_length=100)
+    event_data: dict[str, Any] = Field(default_factory=dict)
+    raw_event: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("timestamp")
+    @classmethod
+    def require_timezone(cls, value: datetime) -> datetime:
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("Event timestamp must include a timezone.")
+        return value
+
+
+class ScenarioRunRequest(BaseModel):
+    scenario_id: str = Field(min_length=1, max_length=100)
+    expected_rule_id: str = Field(min_length=1, max_length=100)
+    expected_host: str = Field(min_length=1, max_length=255)
+    evaluation_time: datetime
+    events: list[ScenarioEventInput] = Field(min_length=1, max_length=100)
+
+    @field_validator("scenario_id", "expected_rule_id", "expected_host")
+    @classmethod
+    def require_non_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("This field must not be blank.")
+        return value
+
+    @field_validator("evaluation_time")
+    @classmethod
+    def require_evaluation_timezone(cls, value: datetime) -> datetime:
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("Evaluation time must include a timezone.")
         return value
