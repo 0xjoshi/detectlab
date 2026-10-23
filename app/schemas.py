@@ -119,3 +119,42 @@ class ScenarioRunRequest(BaseModel):
         if value.tzinfo is None or value.utcoffset() is None:
             raise ValueError("Evaluation time must include a timezone.")
         return value
+
+class ScenarioLibraryEvent(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    seconds_before_evaluation: int = Field(ge=0, le=86400)
+    event_type: str = Field(min_length=1, max_length=100)
+    event_data: dict[str, Any] = Field(default_factory=dict)
+    raw_event: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("event_type")
+    @classmethod
+    def require_non_blank_event_type(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("event_type must not be blank.")
+        return value
+
+
+class ScenarioLibraryDefinition(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    scenario_id: str = Field(min_length=1, max_length=100)
+    name: str = Field(min_length=1, max_length=255)
+    description: str = Field(min_length=1, max_length=2000)
+    expected_rule_id: str = Field(min_length=1, max_length=100)
+    expected_host: str = Field(min_length=1, max_length=255)
+    events: list[ScenarioLibraryEvent] = Field(min_length=1, max_length=100)
+
+    @field_validator(
+        "scenario_id",
+        "name",
+        "description",
+        "expected_rule_id",
+        "expected_host",
+    )
+    @classmethod
+    def require_non_blank_values(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("This field must not be blank.")
+        return value
