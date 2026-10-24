@@ -23,7 +23,8 @@ product.
 ## What it does not do
 
 - It does not collect logs. Events must be submitted through the API.
-- It has one detection type (`threshold`) and one shipped rule (`DET-001`).
+- It has one detection type (`threshold`) and two shipped rules (`DET-001`,
+  `DET-002`).
 - There is no authentication, no frontend, no alert lifecycle, no
   deduplication, no suppression and no cross-rule correlation.
 - Detection results from `/detections/evaluate` are returned, not stored.
@@ -52,22 +53,33 @@ Run the tests:
 python -m pytest -q
 ```
 
-### Try the shipped scenario
+### Try the shipped scenarios
 
-The scenario targets host `WIN11-LAB` and rule `DET-001`, so create the host
-first (in a second terminal):
+`SCN-001` targets host `WIN11-LAB` and rule `DET-001`. `SCN-002` targets host
+`UBUNTU-LAB` and rule `DET-002`. Create each host before running its scenario
+(in a second terminal):
 
 ```powershell
+# SCN-001: create its host, then run it
 Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/v1/hosts `
   -ContentType "application/json" `
   -Body '{"hostname":"WIN11-LAB","platform":"windows","ip_address":"192.168.56.10"}'
 
 Invoke-RestMethod -Method Post `
   -Uri http://127.0.0.1:8000/api/v1/scenarios/library/SCN-001/run
+
+# SCN-002: create its host, then run it
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/v1/hosts `
+  -ContentType "application/json" `
+  -Body '{"hostname":"UBUNTU-LAB","platform":"linux","ip_address":"192.168.56.20"}'
+
+Invoke-RestMethod -Method Post `
+  -Uri http://127.0.0.1:8000/api/v1/scenarios/library/SCN-002/run
 ```
 
-The run inserts five `authentication_failure` events for one user into the
-database, evaluates the rules, and saves the result. Then:
+`SCN-001` inserts five `authentication_failure` events for one user; `SCN-002`
+inserts ten `ssh_authentication_failure` events from one source IP. Each run
+evaluates the rules and saves its result. Then:
 
 ```powershell
 Invoke-RestMethod http://127.0.0.1:8000/api/v1/scenarios/runs
@@ -180,6 +192,20 @@ user fall inside a 60-second window.
 - It counts every `authentication_failure` event; the rule file lists a `status`
   field but the engine does not filter on it.
 
+## Shipped rule: DET-002, SSH Brute Force From Single Source
+
+Fires when ten or more `ssh_authentication_failure` events from the same source
+IP (`event_data.source_ip`) hit the same host inside 120 seconds.
+
+- **Useful for:** spotting rapid password guessing against SSH (MITRE T1110.001).
+- **Does not establish** that an attack occurred.
+- **Possible false positives:** misconfigured automation, a user retrying a bad
+  key.
+- **Does not catch:** slow guessing, or distributed guessing where each source
+  stays under ten failures.
+- `ssh_authentication_failure` is this lab's own event type; DetectLab does not
+  parse real `auth.log` files.
+
 ## API
 
 All routes are under `/api/v1` except `/health`.
@@ -226,7 +252,7 @@ speedup on the same benchmark.
 ## Known limitations
 
 - SQLite only; no migrations (tables are created with `create_all`).
-- One condition type, one shipped rule.
+- One condition type, two shipped rules (`DET-001`, `DET-002`).
 - No authentication or authorization; do not expose the API to untrusted
   networks.
 - The database URL is hard-coded in `app/database.py`.
