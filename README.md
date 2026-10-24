@@ -23,8 +23,8 @@ product.
 ## What it does not do
 
 - It does not collect logs. Events must be submitted through the API.
-- It has one detection type (`threshold`) and two shipped rules (`DET-001`,
-  `DET-002`).
+- It has one detection type (`threshold`, optionally counting distinct values)
+  and three shipped rules (`DET-001`, `DET-002`, `DET-003`).
 - There is no authentication, no frontend, no alert lifecycle, no
   deduplication, no suppression and no cross-rule correlation.
 - Detection results from `/detections/evaluate` are returned, not stored.
@@ -56,8 +56,9 @@ python -m pytest -q
 ### Try the shipped scenarios
 
 `SCN-001` targets host `WIN11-LAB` and rule `DET-001`. `SCN-002` targets host
-`UBUNTU-LAB` and rule `DET-002`. Create each host before running its scenario
-(in a second terminal):
+`UBUNTU-LAB` and rule `DET-002`. `SCN-003` targets `WIN11-LAB` and rule
+`DET-003`. Create each host before running its scenarios (in a second
+terminal):
 
 ```powershell
 # SCN-001: create its host, then run it
@@ -75,10 +76,15 @@ Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/v1/hosts `
 
 Invoke-RestMethod -Method Post `
   -Uri http://127.0.0.1:8000/api/v1/scenarios/library/SCN-002/run
+
+# SCN-003 reuses the WIN11-LAB host created above
+Invoke-RestMethod -Method Post `
+  -Uri http://127.0.0.1:8000/api/v1/scenarios/library/SCN-003/run
 ```
 
 `SCN-001` inserts five `authentication_failure` events for one user; `SCN-002`
-inserts ten `ssh_authentication_failure` events from one source IP. Each run
+inserts ten `ssh_authentication_failure` events from one source IP; `SCN-003`
+inserts five failures from one source IP, each for a different user. Each run
 evaluates the rules and saves its result. Then:
 
 ```powershell
@@ -142,6 +148,27 @@ Rules with any other condition type are rejected at creation time.
 `group_by` fields are looked up on the event (`host`) or inside `event_data`
 (for example `user`).
 
+### Optional: counting distinct values
+
+Add `distinct_field` to a threshold condition to count **distinct values** of
+that field per group instead of events:
+
+```yaml
+condition:
+  type: threshold
+  event_type: authentication_failure
+  count: 5                 # five distinct users...
+  window_seconds: 300
+  distinct_field: user     # ...not five events
+  group_by:
+    - host
+    - source_ip
+```
+
+`distinct_field` must be a non-empty string and must not also appear in
+`group_by`. Events missing the field, or holding an unhashable value, are
+ignored. Rules without `distinct_field` behave exactly as before.
+
 ## Detection semantics
 
 These behaviors are covered by tests:
@@ -151,8 +178,9 @@ These behaviors are covered by tests:
   included, and future events are excluded.
 - Events are grouped by the combination of all `group_by` values. Different
   hosts or users produce separate detections.
-- A group triggers when its event count is **at least** `count`. More events than
-  the threshold still produce one detection per group.
+- A group triggers when its event count is **at least** `count` (or, with
+  `distinct_field`, when its number of distinct values is at least `count`).
+  More events than the threshold still produce one detection per group.
 - Events with a missing group field, a naive or non-datetime timestamp, or an
   unhashable group value are ignored.
 - One invalid rule is skipped (and reported) without stopping the others.
@@ -173,8 +201,10 @@ A detection looks like this:
 }
 ```
 
-The engine evaluates one window ending at the evaluation time; it does not
-slide the window across history.
+Detections from rules that use `distinct_field` also include `distinct_field`
+and `event_count` (the total matching events, including repeats). The engine
+evaluates one window ending at the evaluation time; it does not slide the
+window across history.
 
 ## Shipped rule: DET-001, Multiple Failed Logins
 
@@ -205,6 +235,25 @@ IP (`event_data.source_ip`) hit the same host inside 120 seconds.
   stays under ten failures.
 - `ssh_authentication_failure` is this lab's own event type; DetectLab does not
   parse real `auth.log` files.
+
+## Shipped rule: DET-003, Password Spraying From Single Source
+
+Fires when `authentication_failure` events from the same source IP
+(`event_data.source_ip`) against the same host involve five or more **distinct
+users** inside 300 seconds.
+
+- **Useful for:** spotting password spraying (MITRE T1110.003), where an
+  attacker tries a few passwords against many accounts. `DET-001` misses this
+  because each account fails only once or twice.
+- **Does not establish** that an attack occurred.
+- **Possible false positives:** a shared workstation or NAT gateway where many
+  people mistype passwords, or a misconfigured service account sweep.
+- **Does not catch:** spraying slower than five accounts in five minutes, or
+  spraying spread across many source IPs.
+
+## Adding rules and scenarios
+
+See [docs/ADDING_A_RULE.md](docs/ADDING_A_RULE.md).
 
 ## API
 
@@ -252,10 +301,13 @@ speedup on the same benchmark.
 ## Known limitations
 
 - SQLite only; no migrations (tables are created with `create_all`).
-- One condition type, two shipped rules (`DET-001`, `DET-002`).
+- One condition type (threshold), three shipped rules (`DET-001`, `DET-002`,
+  `DET-003`).
 - No authentication or authorization; do not expose the API to untrusted
   networks.
 - The database URL is hard-coded in `app/database.py`.
+- `python -m app.seed_rules` never overwrites an existing rule, so editing a
+  rule file after it has been seeded does not update the database.
 
 ## License
 
