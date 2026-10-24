@@ -119,3 +119,19 @@ def test_threshold_rule_rejects_invalid_group_by(
 
     with pytest.raises(RuleValidationError, match=error_match):
         validate_rule_definition(invalid_yaml, "DET-001")
+@pytest.mark.parametrize("condition_type", ["match", "keyword"])
+def test_unimplemented_condition_types_are_rejected(condition_type):
+    definition = """\
+id: DET-X
+name: X
+description: X
+platform: windows
+severity: low
+condition:
+  type: {t}
+  field: user
+  value: admin
+""".format(t=condition_type)
+
+    with pytest.raises(RuleValidationError, match="Unsupported condition type"):
+        validate_rule_definition(definition, "DET-X")

@@ -2,7 +2,7 @@
 import yaml
 
 
-SUPPORTED_CONDITION_TYPES = {"threshold", "match", "keyword"}
+SUPPORTED_CONDITION_TYPES = {"threshold"}
 REQUIRED_FIELDS = {
     "id",
     "name",
@@ -71,8 +71,7 @@ def validate_rule_definition(
     condition_type = condition.get("type")
     if condition_type not in SUPPORTED_CONDITION_TYPES:
         raise RuleValidationError(
-            "Unsupported condition type. Supported types: "
-            "threshold, match, keyword."
+            "Unsupported condition type. Supported types: threshold"
         )
 
     if condition_type == "threshold":
@@ -112,39 +111,5 @@ def validate_rule_definition(
         if len(set(group_by)) != len(group_by):
             raise RuleValidationError(
                 "Threshold group_by must not contain duplicate field names."
-            )
-
-    elif condition_type == "match":
-        field = condition.get("field")
-        value = condition.get("value")
-
-        if not isinstance(field, str) or not field.strip():
-            raise RuleValidationError(
-                "Match conditions require a non-empty field."
-            )
-
-        if value is None or isinstance(value, (dict, list)):
-            raise RuleValidationError(
-                "Match conditions require a scalar value."
-            )
-
-    elif condition_type == "keyword":
-        keywords = condition.get("keywords")
-
-        if isinstance(keywords, str):
-            keywords = [keywords]
-
-        if (
-            not isinstance(keywords, list)
-            or not keywords
-            or any(
-                not isinstance(keyword, str) or not keyword.strip()
-                for keyword in keywords
-            )
-        ):
-            raise RuleValidationError(
-                "Keyword conditions require a non-empty keyword or list "
-                "of non-empty keywords."
-            )
-
+)
     return definition

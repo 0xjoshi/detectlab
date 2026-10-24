@@ -1,8 +1,8 @@
 ﻿scenario_id: SCN-001
 name: Multiple Failed Logins
 description: >
-  Verify that three or more authentication failures for the
-  same user trigger the expected detection.
+  Verify that five authentication failures for the same user
+  within 60 seconds trigger the expected detection.
 expected_rule_id: DET-001
 expected_host: WIN11-LAB
 
