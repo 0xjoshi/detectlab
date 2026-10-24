@@ -1,0 +1,19 @@
+id: DET-001
+name: Multiple Failed Logins
+description: Detects repeated failed authentication attempts.
+platform: windows
+severity: medium
+mitre_technique: T1110.001
+required_fields:
+  - timestamp
+  - host
+  - user
+  - status
+condition:
+  type: threshold
+  event_type: authentication_failure
+  count: 5
+  window_seconds: 60
+  group_by:
+    - host
+    - user
