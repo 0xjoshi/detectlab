@@ -74,6 +74,19 @@ def _validate_threshold_rule(rule: dict[str, Any]) -> dict[str, Any]:
     if len(set(group_by)) != len(group_by):
         raise ValueError("Threshold group_by fields must be unique.")
 
+    # Optional: count distinct values of a field instead of events.
+    distinct_field = condition.get("distinct_field")
+    if distinct_field is not None:
+        if not isinstance(distinct_field, str) or not distinct_field.strip():
+            raise ValueError(
+                "Threshold distinct_field must be a non-empty string."
+            )
+
+        if distinct_field in group_by:
+            raise ValueError(
+                "Threshold distinct_field must not also be a group_by field."
+            )
+
     return condition
 
 
@@ -82,7 +95,12 @@ def evaluate_threshold(
     events: list[dict[str, Any]],
     evaluation_time: datetime,
 ) -> list[dict[str, Any]]:
-    """Evaluate a threshold rule against events in a rolling time window."""
+    """Evaluate a threshold rule against events in one time window.
+
+    Without distinct_field, a group triggers when it has at least `count`
+    events. With distinct_field, it triggers when the group has at least
+    `count` distinct values of that field.
+    """
     condition = _validate_threshold_rule(rule)
 
     if not isinstance(evaluation_time, datetime):
@@ -96,8 +114,10 @@ def evaluate_threshold(
     event_type = condition["event_type"]
     threshold = condition["count"]
     group_by = condition["group_by"]
+    distinct_field = condition.get("distinct_field")
 
     grouped_events: dict[tuple, list[dict[str, Any]]] = defaultdict(list)
+    distinct_values: dict[tuple, set] = defaultdict(set)
 
     for event in events:
         if not isinstance(event, dict):
@@ -139,12 +159,37 @@ def evaluate_threshold(
             # Unhashable grouping values cannot form a stable group key.
             continue
 
+        distinct_key = None
+        if distinct_field is not None:
+            distinct_value = _get_event_field(event, distinct_field)
+
+            # Events without a usable distinct value cannot be counted.
+            if distinct_value is None:
+                continue
+
+            try:
+                distinct_key = (
+                    type(distinct_value).__name__,
+                    distinct_value,
+                )
+                hash(distinct_key)
+            except TypeError:
+                continue
+
         grouped_events[group_key].append(event)
+
+        if distinct_field is not None:
+            distinct_values[group_key].add(distinct_key)
 
     detections = []
 
     for group_key, matching_events in grouped_events.items():
-        if len(matching_events) < threshold:
+        if distinct_field is None:
+            measured = len(matching_events)
+        else:
+            measured = len(distinct_values[group_key])
+
+        if measured < threshold:
             continue
 
         group = {
@@ -152,16 +197,20 @@ def evaluate_threshold(
             for field, (_, value) in zip(group_by, group_key)
         }
 
-        detections.append(
-            {
-                "rule_id": rule["id"],
-                "count": len(matching_events),
-                "threshold": threshold,
-                "window_seconds": condition["window_seconds"],
-                "window_start": start_time,
-                "window_end": end_time,
-                "group": group,
-            }
-        )
+        detection = {
+            "rule_id": rule["id"],
+            "count": measured,
+            "threshold": threshold,
+            "window_seconds": condition["window_seconds"],
+            "window_start": start_time,
+            "window_end": end_time,
+            "group": group,
+        }
+
+        if distinct_field is not None:
+            detection["distinct_field"] = distinct_field
+            detection["event_count"] = len(matching_events)
+
+        detections.append(detection)
 
     return detections

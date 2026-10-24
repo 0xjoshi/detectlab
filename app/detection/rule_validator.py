@@ -111,5 +111,19 @@ def validate_rule_definition(
         if len(set(group_by)) != len(group_by):
             raise RuleValidationError(
                 "Threshold group_by must not contain duplicate field names."
-)
+            )
+
+        distinct_field = condition.get("distinct_field")
+        if distinct_field is not None:
+            if not isinstance(distinct_field, str) or not distinct_field.strip():
+                raise RuleValidationError(
+                    "Threshold distinct_field must be a non-empty string."
+                )
+
+            if distinct_field in group_by:
+                raise RuleValidationError(
+                    "Threshold distinct_field must not also be a "
+                    "group_by field."
+                )
+
     return definition
