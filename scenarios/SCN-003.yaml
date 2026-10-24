@@ -1,0 +1,29 @@
+scenario_id: SCN-003
+name: Password Spraying From Single Source
+description: >
+  Verify that failed logins for five different users from the same source
+  IP within 300 seconds trigger the expected detection.
+expected_rule_id: DET-003
+expected_host: WIN11-LAB
+
+events:
+  - seconds_before_evaluation: 250
+    event_type: authentication_failure
+    event_data: {user: alice, source_ip: 198.51.100.77, status: failure}
+    raw_event: {source: scenario-library}
+  - seconds_before_evaluation: 200
+    event_type: authentication_failure
+    event_data: {user: bob, source_ip: 198.51.100.77, status: failure}
+    raw_event: {source: scenario-library}
+  - seconds_before_evaluation: 150
+    event_type: authentication_failure
+    event_data: {user: carol, source_ip: 198.51.100.77, status: failure}
+    raw_event: {source: scenario-library}
+  - seconds_before_evaluation: 100
+    event_type: authentication_failure
+    event_data: {user: dave, source_ip: 198.51.100.77, status: failure}
+    raw_event: {source: scenario-library}
+  - seconds_before_evaluation: 50
+    event_type: authentication_failure
+    event_data: {user: erin, source_ip: 198.51.100.77, status: failure}
+    raw_event: {source: scenario-library}

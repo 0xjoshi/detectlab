@@ -1,0 +1,15 @@
+id: DET-003
+name: Password Spraying From Single Source
+description: Detects failed logins from one source IP across many different accounts.
+platform: windows
+severity: medium
+mitre_technique: T1110.003
+condition:
+  type: threshold
+  event_type: authentication_failure
+  count: 5
+  window_seconds: 300
+  distinct_field: user
+  group_by:
+    - host
+    - source_ip
