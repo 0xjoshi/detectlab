@@ -4,8 +4,9 @@ from pathlib import Path
 
 DATABASE_URL = "sqlite:///./data/detectlab.db"
 
-engine = create_engine( 
-    Path("data").mkdir(exist_ok=True)
+Path("data").mkdir(exist_ok=True)
+
+engine = create_engine(
     DATABASE_URL,
     connect_args={"check_same_thread": False},
 )
