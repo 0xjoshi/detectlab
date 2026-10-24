@@ -1,7 +1,22 @@
 from datetime import datetime, timezone
-from typing import Any
+from typing import Annotated, Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_validator,
+)
+def _ensure_utc(value: datetime) -> datetime:
+    """Mark timezone-less database values as UTC and normalize offsets."""
+    if value.tzinfo is None or value.utcoffset() is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+# For response models only. Request models must keep rejecting naive input.
+UtcDatetime = Annotated[datetime, AfterValidator(_ensure_utc)]
 
 
 class HostCreate(BaseModel):
@@ -62,7 +77,7 @@ class EventCreate(BaseModel):
 class EventResponse(BaseModel):
     id: int
     host_id: int
-    timestamp: datetime
+    timestamp: UtcDatetime
     event_type: str
     event_data: dict[str, Any]
     raw_event: dict[str, Any]
@@ -172,8 +187,8 @@ class ScenarioRunHistoryItem(BaseModel):
     scenario_name: str | None = None
     expected_rule_id: str
     expected_host: str
-    evaluation_time: datetime
-    created_at: datetime
+    evaluation_time: UtcDatetime
+    created_at: UtcDatetime
     status: str
     matched: bool
     events_ingested: int
@@ -198,7 +213,7 @@ class RuleCoverageItem(BaseModel):
     fail_count: int
     distinct_scenarios: int
     latest_status: str | None = None
-    latest_run_at: datetime | None = None
+    latest_run_at: UtcDatetime | None = None
     coverage_status: str
 
 
@@ -216,7 +231,7 @@ class RuleRegressionItem(BaseModel):
     enabled: bool
     total_runs: int
     latest_status: str | None = None
-    latest_run_at: datetime | None = None
+    latest_run_at: UtcDatetime | None = None
     latest_scenario_id: str | None = None
     regression_status: str
 

@@ -132,6 +132,7 @@ def test_event_with_non_utc_offset_is_stored_at_correct_instant(client):
         parsed = parsed.replace(tzinfo=timezone.utc)
 
     assert parsed == datetime(2026, 10, 21, 6, 30, tzinfo=timezone.utc)
+
 def test_create_event_rejects_naive_timestamp(client):
     payload = valid_event_payload()
     payload["timestamp"] = "2026-10-21T12:00:00"
@@ -139,3 +140,12 @@ def test_create_event_rejects_naive_timestamp(client):
     response = client.post("/api/v1/events", json=payload)
 
     assert response.status_code == 422
+
+def test_listed_event_timestamp_includes_utc_offset(client):
+    client.post("/api/v1/events", json=valid_event_payload())
+
+    stored = client.get("/api/v1/events").json()[0]["timestamp"]
+    parsed = datetime.fromisoformat(stored)
+
+    assert parsed.utcoffset() is not None
+    assert parsed.utcoffset().total_seconds() == 0
