@@ -13,14 +13,25 @@ from app.models import Event, Host, Rule
 
 
 EVENT_COUNTS = [1_000, 5_000, 10_000]
-RULE_COUNT = 5
+RULE_COUNTS = [5, 10, 20]
 REPEATS = 5
 RECENT_RATIO = 0.80
+EVENT_TYPES = [
+    "authentication_failure",
+    "process_start",
+    "network_connection",
+    "file_access",
+]
 
 
-def seed_rules(db):
-    for index in range(RULE_COUNT):
+def seed_rules(db, rule_count):
+    db.query(Rule).delete()
+    db.commit()
+
+    for index in range(rule_count):
         rule_id = f"DET-BENCH-{index + 1:03}"
+        event_type = EVENT_TYPES[index % len(EVENT_TYPES)]
+
         definition = {
             "id": rule_id,
             "name": f"Benchmark Rule {index + 1}",
@@ -29,7 +40,7 @@ def seed_rules(db):
             "severity": "medium",
             "condition": {
                 "type": "threshold",
-                "event_type": "authentication_failure",
+                "event_type": event_type,
                 "count": 5,
                 "window_seconds": 60,
                 "group_by": ["host", "user"],
@@ -63,18 +74,18 @@ def seed_events(db, event_count, profile, evaluation_time):
     batch = []
 
     for index in range(event_count):
+        event_type = EVENT_TYPES[index % len(EVENT_TYPES)]
+
         if index < recent_count:
             timestamp = evaluation_time - timedelta(
                 seconds=1 + index % 59
             )
-            event_type = "authentication_failure"
-            user = "benchmark-user"
+            user = f"recent-user-{index % 10}"
         else:
             timestamp = evaluation_time - timedelta(
                 minutes=10, seconds=index % 60
             )
-            event_type = "process_start"
-            user = f"user-{index % 100}"
+            user = f"historical-user-{index % 100}"
 
         batch.append(
             Event(
@@ -98,22 +109,21 @@ def seed_events(db, event_count, profile, evaluation_time):
     return recent_count
 
 
-def measure(db, evaluation_time):
+def measure(db, evaluation_time, rule_count):
+    # Warm-up, then verify the evaluation result.
     result = evaluate_enabled_rules(db, evaluation_time)
-
-    assert result["rules_evaluated"] == RULE_COUNT
-    assert len(result["detections"]) == RULE_COUNT
+    assert result["rules_evaluated"] == rule_count
+    assert result["rules_skipped"] == []
 
     measurements = []
 
-    # Warm up before collecting timings.
     for _ in range(REPEATS):
         started = perf_counter()
         result = evaluate_enabled_rules(db, evaluation_time)
         measurements.append(perf_counter() - started)
 
-        assert result["rules_evaluated"] == RULE_COUNT
-        assert len(result["detections"]) == RULE_COUNT
+        assert result["rules_evaluated"] == rule_count
+        assert result["rules_skipped"] == []
 
     return median(measurements)
 
@@ -142,39 +152,51 @@ def main():
             )
         )
         db.commit()
-        seed_rules(db)
 
         print("DetectLab detection service benchmark")
-        print(f"Enabled rules: {RULE_COUNT}")
+        print(f"Rule counts: {RULE_COUNTS}")
+        print(f"Event counts: {EVENT_COUNTS}")
         print(f"Measurements per workload: {REPEATS}")
         print("Times are median wall-clock seconds.")
         print()
 
-        for profile in ("historical-heavy", "recent-heavy"):
-            print(f"Workload: {profile}")
-            print(
-                f"{'Events':>10} {'Recent':>10} "
-                f"{'Median (s)':>14} {'Events/s':>14}"
-            )
+        for rule_count in RULE_COUNTS:
+            seed_rules(db, rule_count)
 
-            for event_count in EVENT_COUNTS:
-                recent_count = seed_events(
-                    db,
-                    event_count,
-                    profile,
-                    evaluation_time,
-                )
-                elapsed = measure(db, evaluation_time)
-                throughput = (
-                    event_count / elapsed if elapsed else float("inf")
-                )
-
+            for profile in ("historical-heavy", "recent-heavy"):
                 print(
-                    f"{event_count:>10,} {recent_count:>10,} "
-                    f"{elapsed:>14.6f} {throughput:>14,.0f}"
+                    f"Workload: {profile} | Rules: {rule_count}"
+                )
+                print(
+                    f"{'Events':>10} {'Recent':>10} "
+                    f"{'Median (s)':>14} {'Events/s':>14}"
                 )
 
-            print()
+                for event_count in EVENT_COUNTS:
+                    recent_count = seed_events(
+                        db,
+                        event_count,
+                        profile,
+                        evaluation_time,
+                    )
+
+                    elapsed = measure(
+                        db,
+                        evaluation_time,
+                        rule_count,
+                    )
+                    throughput = (
+                        event_count / elapsed
+                        if elapsed
+                        else float("inf")
+                    )
+
+                    print(
+                        f"{event_count:>10,} {recent_count:>10,} "
+                        f"{elapsed:>14.6f} {throughput:>14,.0f}"
+                    )
+
+                print()
 
     finally:
         db.close()
