@@ -3,6 +3,5 @@ uvicorn[standard]
 sqlalchemy
 pydantic
 pyyaml
-streamlit
 pytest
-requests
+httpx2
