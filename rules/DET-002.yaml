@@ -1,0 +1,14 @@
+id: DET-002
+name: SSH Brute Force From Single Source
+description: Detects repeated failed SSH logins from one source IP against one host.
+platform: linux
+severity: medium
+mitre_technique: T1110.001
+condition:
+  type: threshold
+  event_type: ssh_authentication_failure
+  count: 10
+  window_seconds: 120
+  group_by:
+    - host
+    - source_ip
