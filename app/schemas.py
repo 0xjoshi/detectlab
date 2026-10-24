@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -51,6 +51,13 @@ class EventCreate(BaseModel):
     event_data: dict[str, Any]
     raw_event: dict[str, Any]
 
+    @field_validator("timestamp")
+    @classmethod
+    def normalize_timestamp(cls, value: datetime) -> datetime:
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("Event timestamp must include a timezone.")
+        return value.astimezone(timezone.utc)
+
 
 class EventResponse(BaseModel):
     id: int
@@ -96,7 +103,7 @@ class ScenarioEventInput(BaseModel):
     def require_timezone(cls, value: datetime) -> datetime:
         if value.tzinfo is None or value.utcoffset() is None:
             raise ValueError("Event timestamp must include a timezone.")
-        return value
+        return value.astimezone(timezone.utc)
 
 
 class ScenarioRunRequest(BaseModel):

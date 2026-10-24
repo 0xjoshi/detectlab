@@ -116,3 +116,26 @@ def test_create_event_rejects_invalid_payload(client):
     response = client.post("/api/v1/events", json=payload)
 
     assert response.status_code == 422
+
+def test_event_with_non_utc_offset_is_stored_at_correct_instant(client):
+    payload = valid_event_payload()
+    payload["timestamp"] = "2026-10-21T12:00:00+05:30"  # 06:30 UTC
+
+    create_response = client.post("/api/v1/events", json=payload)
+    assert create_response.status_code == 201
+
+    stored = client.get("/api/v1/events").json()[0]["timestamp"]
+    parsed = datetime.fromisoformat(stored)
+
+    # The detection service treats timezone-less stored values as UTC.
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+
+    assert parsed == datetime(2026, 10, 21, 6, 30, tzinfo=timezone.utc)
+def test_create_event_rejects_naive_timestamp(client):
+    payload = valid_event_payload()
+    payload["timestamp"] = "2026-10-21T12:00:00"
+
+    response = client.post("/api/v1/events", json=payload)
+
+    assert response.status_code == 422
