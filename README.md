@@ -417,12 +417,35 @@ These are ideas, not implemented features.
 - Persisted detections and an alert lifecycle
 - Parsers for real log formats
 
-<!--
-Screenshots: add images under docs/images/ and embed them here once captured, e.g.
-![API documentation](docs/images/swagger-ui.png)
-Suggested: Swagger UI, a positive scenario PASS, a negative scenario PASS,
-and the /coverage and /regressions output.
--->
+## Screenshots
+
+### API Documentation
+
+Interactive API documentation powered by FastAPI.
+
+![DetectLab Swagger UI](docs/images/swagger-ui.png)
+
+### Detection Scenario Results
+
+**Positive scenario — SSH brute-force detection**
+
+![Positive scenario passed](docs/images/scenario-positive-pass.png)
+
+**Negative scenario — exact-window boundary correctly excluded**
+
+![Negative scenario passed](docs/images/scenario-negative-pass.png)
+
+### Detection Coverage and Regression Status
+
+All three detection rules are tested, with 100% rule coverage and no current regressions in the captured results.
+
+![Detection coverage and regression status](docs/images/coverage-regressions.png)
+
+### Automated Test Suite
+
+The test suite completed successfully with 200 passing tests.
+
+![DetectLab tests passing](docs/images/tests-passing.png)
 
 ## ⚠️ Disclaimer
 
