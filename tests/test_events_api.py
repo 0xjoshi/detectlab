@@ -149,3 +149,55 @@ def test_listed_event_timestamp_includes_utc_offset(client):
 
     assert parsed.utcoffset() is not None
     assert parsed.utcoffset().total_seconds() == 0
+
+def test_list_events_returns_empty_list_when_no_events_exist(client):
+    response = client.get("/api/v1/events")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_list_events_returns_multiple_created_events(client):
+    first_payload = valid_event_payload()
+    second_payload = valid_event_payload()
+    second_payload["event_type"] = "process_created"
+    second_payload["event_data"] = {
+        "process_name": "powershell.exe",
+    }
+
+    first_response = client.post(
+        "/api/v1/events",
+        json=first_payload,
+    )
+    second_response = client.post(
+        "/api/v1/events",
+        json=second_payload,
+    )
+
+    assert first_response.status_code == 201
+    assert second_response.status_code == 201
+
+    response = client.get("/api/v1/events")
+
+    assert response.status_code == 200
+
+    data = response.json()
+    assert len(data) == 2
+    assert {
+        event["event_type"] for event in data
+    } == {
+        "authentication_failure",
+        "process_created",
+    }
+
+
+def test_create_event_rejects_malformed_timestamp(client):
+    payload = valid_event_payload()
+    payload["timestamp"] = "not-a-valid-timestamp"
+
+    response = client.post(
+        "/api/v1/events",
+        json=payload,
+    )
+
+    assert response.status_code == 422

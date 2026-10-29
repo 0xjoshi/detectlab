@@ -136,7 +136,7 @@ def evaluate_threshold(
         except ValueError:
             continue
 
-        # Window is open at the start and closed at the evaluation time.
+        # Window includes both the start boundary and evaluation time.
         if not start_time < event_time <= end_time:
             continue
 

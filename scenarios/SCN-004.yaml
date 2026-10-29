@@ -1,0 +1,41 @@
+﻿scenario_id: SCN-004
+name: Multiple Failed Logins Below Threshold
+description: >
+  Verify that four authentication failures for the same user
+  within 60 seconds do not trigger the detection requiring five failures.
+expected_rule_id: DET-001
+expected_host: WIN11-LAB
+expected_detection: false
+
+events:
+  - seconds_before_evaluation: 40
+    event_type: authentication_failure
+    event_data:
+      user: scenario-test-user
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 30
+    event_type: authentication_failure
+    event_data:
+      user: scenario-test-user
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 20
+    event_type: authentication_failure
+    event_data:
+      user: scenario-test-user
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 10
+    event_type: authentication_failure
+    event_data:
+      user: scenario-test-user
+      status: failure
+    raw_event:
+      source: scenario-library

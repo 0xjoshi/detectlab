@@ -125,6 +125,7 @@ class ScenarioRunRequest(BaseModel):
     scenario_id: str = Field(min_length=1, max_length=100)
     expected_rule_id: str = Field(min_length=1, max_length=100)
     expected_host: str = Field(min_length=1, max_length=255)
+    expected_detection: bool = True
     evaluation_time: datetime
     events: list[ScenarioEventInput] = Field(min_length=1, max_length=100)
 
@@ -166,6 +167,7 @@ class ScenarioLibraryDefinition(BaseModel):
     description: str = Field(min_length=1, max_length=2000)
     expected_rule_id: str = Field(min_length=1, max_length=100)
     expected_host: str = Field(min_length=1, max_length=255)
+    expected_detection: bool = True
     events: list[ScenarioLibraryEvent] = Field(min_length=1, max_length=100)
 
     @field_validator(
@@ -241,4 +243,5 @@ class RegressionReportResponse(BaseModel):
     regression_rules: int
     healthy_rules: int
     untested_rules: int
+    unknown_rules: int
     rules: list[RuleRegressionItem]

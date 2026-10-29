@@ -1,0 +1,49 @@
+﻿scenario_id: SCN-011
+name: Failed Logins Split Across Users
+description: >
+  Verify that five authentication failures split across two
+  different users do not trigger DET-001 for either user.
+expected_rule_id: DET-001
+expected_host: WIN11-LAB
+expected_detection: false
+
+events:
+  - seconds_before_evaluation: 50
+    event_type: authentication_failure
+    event_data:
+      user: alice
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 40
+    event_type: authentication_failure
+    event_data:
+      user: alice
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 30
+    event_type: authentication_failure
+    event_data:
+      user: alice
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 20
+    event_type: authentication_failure
+    event_data:
+      user: bob
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 10
+    event_type: authentication_failure
+    event_data:
+      user: bob
+      status: failure
+    raw_event:
+      source: scenario-library

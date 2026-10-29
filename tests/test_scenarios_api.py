@@ -265,3 +265,70 @@ def test_scenario_run_history_pagination(client):
     # Newest run should appear first.
     assert first_page["items"][0]["run_id"] == second.json()["run_id"]
     assert second_page["items"][0]["run_id"] == first.json()["run_id"]
+
+
+def test_get_scenario_run_by_id(client):
+    payload = make_payload(event_count=3)
+
+    create_response = client.post(
+        "/api/v1/scenarios/run",
+        json=payload,
+    )
+
+    assert create_response.status_code == 200
+    run_id = create_response.json()["run_id"]
+
+    response = client.get(
+        f"/api/v1/scenarios/runs/{run_id}",
+    )
+
+    assert response.status_code == 200
+
+    run_data = response.json()
+    assert run_data["run_id"] == run_id
+    assert run_data["scenario_id"] == "SCN-API-001"
+    assert run_data["status"] == "PASS"
+    assert run_data["matched"] is True
+    assert run_data["events_ingested"] == 3
+    assert len(run_data["event_ids"]) == 3
+
+def test_get_scenario_run_unknown_id_returns_404(client):
+    response = client.get(
+        "/api/v1/scenarios/runs/999999",
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == (
+        "Scenario run 999999 was not found."
+    )
+
+
+def test_scenario_run_history_empty(client):
+    response = client.get(
+        "/api/v1/scenarios/runs",
+    )
+
+    assert response.status_code == 200
+    assert response.json()["items"] == []
+    assert response.json()["total"] == 0
+    assert response.json()["limit"] == 20
+    assert response.json()["offset"] == 0
+
+
+def test_scenario_run_history_rejects_invalid_limit(client):
+    for limit in (0, 101):
+        response = client.get(
+            "/api/v1/scenarios/runs",
+            params={"limit": limit},
+        )
+
+        assert response.status_code == 422
+
+
+def test_scenario_run_history_rejects_negative_offset(client):
+    response = client.get(
+        "/api/v1/scenarios/runs",
+        params={"offset": -1},
+    )
+
+    assert response.status_code == 422

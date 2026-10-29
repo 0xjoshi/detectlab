@@ -1,0 +1,54 @@
+﻿scenario_id: SCN-013
+name: Password Spraying Split Across Source IPs
+description: >
+  Verify that failed logins across five distinct users split
+  between two source IPs do not trigger DET-003.
+expected_rule_id: DET-003
+expected_host: WIN11-LAB
+expected_detection: false
+
+events:
+  - seconds_before_evaluation: 250
+    event_type: authentication_failure
+    event_data:
+      user: alice
+      source_ip: 198.51.100.77
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 200
+    event_type: authentication_failure
+    event_data:
+      user: bob
+      source_ip: 198.51.100.77
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 150
+    event_type: authentication_failure
+    event_data:
+      user: carol
+      source_ip: 198.51.100.77
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 100
+    event_type: authentication_failure
+    event_data:
+      user: dave
+      source_ip: 203.0.113.50
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 50
+    event_type: authentication_failure
+    event_data:
+      user: erin
+      source_ip: 203.0.113.50
+      status: failure
+    raw_event:
+      source: scenario-library

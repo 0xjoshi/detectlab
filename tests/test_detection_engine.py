@@ -132,7 +132,6 @@ def test_event_exactly_at_window_start_is_excluded():
 
     assert result == []
 
-
 def test_missing_group_field_does_not_trigger_detection():
     now = datetime(2026, 10, 21, 5, 30, tzinfo=timezone.utc)
     events = [
@@ -230,3 +229,28 @@ def test_event_with_naive_timestamp_is_ignored():
 
     assert len(result) == 1
     assert result[0]["count"] == 2
+
+def test_timezone_offset_timestamp_is_normalized_to_utc():
+    now = datetime(2026, 10, 21, 5, 30, tzinfo=timezone.utc)
+
+    # 10:59:50 at UTC+05:30 is 05:29:50 UTC.
+    offset_timestamp = datetime(
+        2026,
+        10,
+        21,
+        10,
+        59,
+        50,
+        tzinfo=timezone(timedelta(hours=5, minutes=30)),
+    )
+
+    events = [
+        make_event(offset_timestamp),
+        make_event(now - timedelta(seconds=20)),
+        make_event(now),
+    ]
+
+    result = evaluate_threshold(make_rule(count=3), events, now)
+
+    assert len(result) == 1
+    assert result[0]["count"] == 3

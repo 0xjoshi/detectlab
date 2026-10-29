@@ -1,0 +1,49 @@
+﻿scenario_id: SCN-005
+name: Multiple Failed Logins Outside Time Window
+description: >
+  Verify that five authentication failures for the same user
+  spread across more than 60 seconds do not trigger DET-001.
+expected_rule_id: DET-001
+expected_host: WIN11-LAB
+expected_detection: false
+
+events:
+  - seconds_before_evaluation: 100
+    event_type: authentication_failure
+    event_data:
+      user: scenario-test-user
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 80
+    event_type: authentication_failure
+    event_data:
+      user: scenario-test-user
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 60
+    event_type: authentication_failure
+    event_data:
+      user: scenario-test-user
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 40
+    event_type: authentication_failure
+    event_data:
+      user: scenario-test-user
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 10
+    event_type: authentication_failure
+    event_data:
+      user: scenario-test-user
+      status: failure
+    raw_event:
+      source: scenario-library

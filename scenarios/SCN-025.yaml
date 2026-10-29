@@ -1,0 +1,59 @@
+﻿scenario_id: SCN-025
+name: Password Spraying Just Outside Window
+description: >
+  Verify that an authentication failure 301 seconds before
+  evaluation is excluded from DET-003's 300-second window.
+expected_rule_id: DET-003
+expected_host: WIN11-LAB
+expected_detection: false
+
+events:
+  - seconds_before_evaluation: 301
+    event_type: authentication_failure
+    event_data:
+      host: WIN11-LAB
+      user: outside-user-1
+      source_ip: 198.51.100.120
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 250
+    event_type: authentication_failure
+    event_data:
+      host: WIN11-LAB
+      user: outside-user-2
+      source_ip: 198.51.100.120
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 200
+    event_type: authentication_failure
+    event_data:
+      host: WIN11-LAB
+      user: outside-user-3
+      source_ip: 198.51.100.120
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 150
+    event_type: authentication_failure
+    event_data:
+      host: WIN11-LAB
+      user: outside-user-4
+      source_ip: 198.51.100.120
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 100
+    event_type: authentication_failure
+    event_data:
+      host: WIN11-LAB
+      user: outside-user-5
+      source_ip: 198.51.100.120
+      status: failure
+    raw_event:
+      source: scenario-library

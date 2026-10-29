@@ -1,0 +1,49 @@
+﻿scenario_id: SCN-014
+name: Successful Logins Do Not Trigger Failed Login Rule
+description: >
+  Verify that successful login events do not trigger DET-001,
+  which detects authentication failures.
+expected_rule_id: DET-001
+expected_host: WIN11-LAB
+expected_detection: false
+
+events:
+  - seconds_before_evaluation: 50
+    event_type: successful_login
+    event_data:
+      user: scenario-test-user
+      status: success
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 40
+    event_type: successful_login
+    event_data:
+      user: scenario-test-user
+      status: success
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 30
+    event_type: successful_login
+    event_data:
+      user: scenario-test-user
+      status: success
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 20
+    event_type: successful_login
+    event_data:
+      user: scenario-test-user
+      status: success
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 10
+    event_type: successful_login
+    event_data:
+      user: scenario-test-user
+      status: success
+    raw_event:
+      source: scenario-library

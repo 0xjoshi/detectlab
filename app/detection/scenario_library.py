@@ -126,6 +126,7 @@ def run_library_scenario(
         scenario_id=definition.scenario_id,
         expected_rule_id=definition.expected_rule_id,
         expected_host=definition.expected_host,
+        expected_detection=definition.expected_detection,
         evaluation_time=evaluation_time,
         events=[
             {

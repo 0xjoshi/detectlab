@@ -1,0 +1,54 @@
+﻿scenario_id: SCN-016
+name: Successful Logins Do Not Trigger Password Spraying Rule
+description: >
+  Verify that successful login events for multiple users do not
+  trigger DET-003, which detects failed logins across distinct accounts.
+expected_rule_id: DET-003
+expected_host: WIN11-LAB
+expected_detection: false
+
+events:
+  - seconds_before_evaluation: 250
+    event_type: authentication_success
+    event_data:
+      user: alice
+      source_ip: 198.51.100.77
+      status: success
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 200
+    event_type: authentication_success
+    event_data:
+      user: bob
+      source_ip: 198.51.100.77
+      status: success
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 150
+    event_type: authentication_success
+    event_data:
+      user: carol
+      source_ip: 198.51.100.77
+      status: success
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 100
+    event_type: authentication_success
+    event_data:
+      user: dave
+      source_ip: 198.51.100.77
+      status: success
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 50
+    event_type: authentication_success
+    event_data:
+      user: erin
+      source_ip: 198.51.100.77
+      status: success
+    raw_event:
+      source: scenario-library

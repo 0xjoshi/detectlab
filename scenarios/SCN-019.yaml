@@ -1,0 +1,49 @@
+﻿scenario_id: SCN-019
+name: Password Spraying Missing Username
+description: >
+  Verify that authentication failures without usernames do not
+  trigger DET-003, which counts distinct users.
+expected_rule_id: DET-003
+expected_host: WIN11-LAB
+expected_detection: false
+
+events:
+  - seconds_before_evaluation: 250
+    event_type: authentication_failure
+    event_data:
+      source_ip: 198.51.100.77
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 200
+    event_type: authentication_failure
+    event_data:
+      source_ip: 198.51.100.77
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 150
+    event_type: authentication_failure
+    event_data:
+      source_ip: 198.51.100.77
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 100
+    event_type: authentication_failure
+    event_data:
+      source_ip: 198.51.100.77
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 50
+    event_type: authentication_failure
+    event_data:
+      source_ip: 198.51.100.77
+      status: failure
+    raw_event:
+      source: scenario-library

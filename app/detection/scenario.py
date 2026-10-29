@@ -20,12 +20,12 @@ def run_scenario(
 ) -> dict[str, Any]:
     """Ingest scenario events and validate the expected detection."""
 
-    host = (
+    expected_host = (
         db.query(Host)
         .filter(Host.hostname == request.expected_host)
         .first()
     )
-    if host is None:
+    if expected_host is None:
         raise HTTPException(
             status_code=404,
             detail=f"Host '{request.expected_host}' was not found.",
@@ -65,7 +65,10 @@ def run_scenario(
     if definition.get("id") != stored_rule.rule_id:
         raise HTTPException(
             status_code=422,
-            detail="The rule ID in the YAML does not match the database rule ID.",
+            detail=(
+                "The rule ID in the YAML does not match "
+                "the database rule ID."
+            ),
         )
 
     condition = definition.get("condition")
@@ -82,40 +85,69 @@ def run_scenario(
         )
 
     created_events = []
+    scenario_events = []
 
     try:
-        # Persist scenario events with a traceable scenario ID.
+        # Ingest and evaluate each event using its actual host.
         for item in request.events:
+            event_data = dict(item.event_data)
+            event_host_name = event_data.get(
+                "host",
+                request.expected_host,
+            )
+
+            if (
+                not isinstance(event_host_name, str)
+                or not event_host_name.strip()
+            ):
+                raise HTTPException(
+                    status_code=422,
+                    detail=(
+                        "Each event host must be a "
+                        "non-empty hostname."
+                    ),
+                )
+
+            event_host = (
+                db.query(Host)
+                .filter(Host.hostname == event_host_name)
+                .first()
+            )
+
+            if event_host is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Host '{event_host_name}' was not found.",
+                )
+
             raw_event = dict(item.raw_event)
             raw_event["scenario_id"] = request.scenario_id
 
+            event_timestamp = item.timestamp.astimezone(timezone.utc)
+
             event = Event(
-                host_id=host.id,
-                timestamp=item.timestamp.astimezone(timezone.utc),
+                host_id=event_host.id,
+                timestamp=event_timestamp,
                 event_type=item.event_type,
-                event_data=item.event_data,
+                event_data=event_data,
                 raw_event=raw_event,
             )
             db.add(event)
             created_events.append(event)
 
+            scenario_events.append(
+                {
+                    "host": event_host.hostname,
+                    "timestamp": event_timestamp,
+                    "event_type": item.event_type,
+                    "event_data": event_data,
+                    "raw_event": raw_event,
+                }
+            )
+
         db.flush()
 
-        # Evaluate only this request's events, not historical events.
-        scenario_events = [
-            {
-                "host": host.hostname,
-                "timestamp": item.timestamp.astimezone(timezone.utc),
-                "event_type": item.event_type,
-                "event_data": item.event_data,
-                "raw_event": {
-                    **item.raw_event,
-                    "scenario_id": request.scenario_id,
-                },
-            }
-            for item in request.events
-        ]
-
+        # Evaluate only this scenario's events, not historical events.
         evaluation_time = request.evaluation_time.astimezone(timezone.utc)
 
         try:
@@ -127,13 +159,17 @@ def run_scenario(
         except ValueError as exc:
             raise HTTPException(
                 status_code=422,
-                detail=f"The expected rule could not be evaluated: {exc}",
+                detail=(
+                    "The expected rule could not be evaluated: "
+                    f"{exc}"
+                ),
             ) from exc
 
         validation = validate_detection(
             expected_rule_id=request.expected_rule_id,
             expected_host=request.expected_host,
             detections=detections,
+            expected_detection=request.expected_detection,
         )
 
         # Save the run and its events in the same transaction.

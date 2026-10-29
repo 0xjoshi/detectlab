@@ -1,0 +1,59 @@
+﻿scenario_id: SCN-031
+name: Password Spraying Across Hosts
+description: >
+  Verify that distinct users failing authentication on different hosts
+  are not combined to trigger DET-003.
+expected_rule_id: DET-003
+expected_host: WIN11-LAB
+expected_detection: false
+
+events:
+  - seconds_before_evaluation: 50
+    event_type: authentication_failure
+    event_data:
+      host: WIN11-LAB
+      user: alice
+      source_ip: 198.51.100.210
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 45
+    event_type: authentication_failure
+    event_data:
+      host: WIN11-LAB
+      user: bob
+      source_ip: 198.51.100.210
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 40
+    event_type: authentication_failure
+    event_data:
+      host: UBUNTU-LAB
+      user: carol
+      source_ip: 198.51.100.210
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 35
+    event_type: authentication_failure
+    event_data:
+      host: UBUNTU-LAB
+      user: dave
+      source_ip: 198.51.100.210
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 30
+    event_type: authentication_failure
+    event_data:
+      host: UBUNTU-LAB
+      user: erin
+      source_ip: 198.51.100.210
+      status: failure
+    raw_event:
+      source: scenario-library

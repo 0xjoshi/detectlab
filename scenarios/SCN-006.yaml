@@ -1,0 +1,90 @@
+﻿scenario_id: SCN-006
+name: SSH Brute Force Below Threshold
+description: >
+  Verify that nine failed SSH logins from the same source IP
+  against the same host within 120 seconds do not trigger DET-002.
+expected_rule_id: DET-002
+expected_host: UBUNTU-LAB
+expected_detection: false
+
+events:
+  - seconds_before_evaluation: 100
+    event_type: ssh_authentication_failure
+    event_data:
+      source_ip: 203.0.113.50
+      user: root
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 90
+    event_type: ssh_authentication_failure
+    event_data:
+      source_ip: 203.0.113.50
+      user: root
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 80
+    event_type: ssh_authentication_failure
+    event_data:
+      source_ip: 203.0.113.50
+      user: root
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 70
+    event_type: ssh_authentication_failure
+    event_data:
+      source_ip: 203.0.113.50
+      user: root
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 60
+    event_type: ssh_authentication_failure
+    event_data:
+      source_ip: 203.0.113.50
+      user: root
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 50
+    event_type: ssh_authentication_failure
+    event_data:
+      source_ip: 203.0.113.50
+      user: root
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 40
+    event_type: ssh_authentication_failure
+    event_data:
+      source_ip: 203.0.113.50
+      user: root
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 30
+    event_type: ssh_authentication_failure
+    event_data:
+      source_ip: 203.0.113.50
+      user: root
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 20
+    event_type: ssh_authentication_failure
+    event_data:
+      source_ip: 203.0.113.50
+      user: root
+      status: failure
+    raw_event:
+      source: scenario-library

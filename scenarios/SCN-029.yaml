@@ -1,0 +1,59 @@
+﻿scenario_id: SCN-029
+name: Failed Logins Across Hosts
+description: >
+  Verify that failed logins on different hosts are not combined
+  to trigger DET-001.
+expected_rule_id: DET-001
+expected_host: WIN11-LAB
+expected_detection: false
+
+events:
+  - seconds_before_evaluation: 40
+    event_type: authentication_failure
+    event_data:
+      host: WIN11-LAB
+      user: shared-test-user
+      source_ip: 198.51.100.150
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 30
+    event_type: authentication_failure
+    event_data:
+      host: WIN11-LAB
+      user: shared-test-user
+      source_ip: 198.51.100.150
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 20
+    event_type: authentication_failure
+    event_data:
+      host: WIN11-LAB
+      user: shared-test-user
+      source_ip: 198.51.100.150
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 15
+    event_type: authentication_failure
+    event_data:
+      host: UBUNTU-LAB
+      user: shared-test-user
+      source_ip: 198.51.100.150
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 10
+    event_type: authentication_failure
+    event_data:
+      host: UBUNTU-LAB
+      user: shared-test-user
+      source_ip: 198.51.100.150
+      status: failure
+    raw_event:
+      source: scenario-library

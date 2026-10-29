@@ -233,3 +233,68 @@ def test_loader_rejects_empty_events(client):
         scenario_library.load_scenario_definition("SCN-001")
 
     assert exc_info.value.status_code == 422
+
+def test_loader_rejects_null_yaml_document(client):
+    write_scenario(
+        scenario_library.SCENARIO_DIRECTORY,
+        "null\n",
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        scenario_library.load_scenario_definition("SCN-001")
+
+    assert exc_info.value.status_code == 422
+
+
+def test_loader_rejects_invalid_text_encoding(client):
+    path = (
+        scenario_library.SCENARIO_DIRECTORY
+        / "SCN-001.yaml"
+    )
+    path.write_bytes(b"\xff\xfe\xfa")
+
+    with pytest.raises(HTTPException) as exc_info:
+        scenario_library.load_scenario_definition("SCN-001")
+
+    assert exc_info.value.status_code == 422
+    assert exc_info.value.detail == (
+        "Scenario file contains invalid YAML or text encoding."
+    )
+
+
+def test_loader_returns_422_when_file_cannot_be_read(
+    client,
+    monkeypatch,
+):
+    data = valid_scenario()
+    write_scenario(
+        scenario_library.SCENARIO_DIRECTORY,
+        yaml.safe_dump(data),
+    )
+
+    def raise_permission_error(*args, **kwargs):
+        raise PermissionError("Access denied")
+
+    monkeypatch.setattr(
+        Path,
+        "open",
+        raise_permission_error,
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        scenario_library.load_scenario_definition("SCN-001")
+
+    assert exc_info.value.status_code == 422
+    assert exc_info.value.detail == (
+        "Scenario file could not be read."
+    )
+
+
+def test_library_endpoint_returns_422_for_invalid_scenario_id(
+    client,
+):
+    response = client.post(
+        "/api/v1/scenarios/library/bad%2Fid/run",
+    )
+
+    assert response.status_code in (404, 422)

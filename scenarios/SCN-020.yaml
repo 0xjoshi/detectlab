@@ -1,0 +1,58 @@
+﻿scenario_id: SCN-020
+name: Failed Logins Exact Window Boundary
+description: >
+  Verify that an authentication failure exactly 60 seconds
+  before evaluation is excluded from DET-001's time window.
+expected_rule_id: DET-001
+expected_host: WIN11-LAB
+expected_detection: false
+events:
+  - seconds_before_evaluation: 60
+    event_type: authentication_failure
+    event_data:
+      host: WIN11-LAB
+      user: boundary-user
+      source_ip: 198.51.100.80
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 50
+    event_type: authentication_failure
+    event_data:
+      host: WIN11-LAB
+      user: boundary-user
+      source_ip: 198.51.100.80
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 40
+    event_type: authentication_failure
+    event_data:
+      host: WIN11-LAB
+      user: boundary-user
+      source_ip: 198.51.100.80
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 30
+    event_type: authentication_failure
+    event_data:
+      host: WIN11-LAB
+      user: boundary-user
+      source_ip: 198.51.100.80
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 20
+    event_type: authentication_failure
+    event_data:
+      host: WIN11-LAB
+      user: boundary-user
+      source_ip: 198.51.100.80
+      status: failure
+    raw_event:
+      source: scenario-library

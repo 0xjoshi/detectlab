@@ -186,5 +186,52 @@ def test_empty_rule_database_returns_zero_counts(client, test_db):
         "regression_rules": 0,
         "healthy_rules": 0,
         "untested_rules": 0,
+        "unknown_rules": 0,
         "rules": [],
     }
+def test_unexpected_latest_status_is_unknown(client, test_db):
+    now = datetime(2026, 10, 23, 12, 0, tzinfo=timezone.utc)
+
+    with test_db() as db:
+        add_run(db, "SCN-UNKNOWN", "DET-001", "UNEXPECTED", now)
+
+    response = client.get("/api/v1/regressions")
+
+    assert response.status_code == 200
+    data = response.json()
+
+    rule = next(
+        item for item in data["rules"]
+        if item["rule_id"] == "DET-001"
+    )
+
+    assert rule["latest_status"] == "UNEXPECTED"
+    assert rule["regression_status"] == "UNKNOWN"
+    assert data["regression_rules"] == 0
+    assert data["healthy_rules"] == 0
+    assert data["untested_rules"] == 1
+    assert data["unknown_rules"] == 1
+
+def test_unexpected_latest_status_is_not_reported_as_healthy(
+    client, test_db
+):
+    now = datetime(2026, 10, 23, 12, 0, tzinfo=timezone.utc)
+
+    with test_db() as db:
+        add_run(db, "SCN-UNKNOWN", "DET-001", "UNKNOWN_STATUS", now)
+
+    response = client.get("/api/v1/regressions")
+
+    assert response.status_code == 200
+    data = response.json()
+
+    rule = next(
+        item for item in data["rules"]
+        if item["rule_id"] == "DET-001"
+    )
+
+    assert rule["latest_status"] == "UNKNOWN_STATUS"
+    assert rule["regression_status"] == "UNKNOWN"
+    assert data["regression_rules"] == 0
+    assert data["healthy_rules"] == 0
+    assert data["untested_rules"] == 1

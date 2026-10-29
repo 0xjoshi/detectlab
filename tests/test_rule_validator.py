@@ -135,3 +135,18 @@ condition:
 
     with pytest.raises(RuleValidationError, match="Unsupported condition type"):
         validate_rule_definition(definition, "DET-X")
+
+@pytest.mark.parametrize(
+    ("old_value", "new_value"),
+    [
+        ("count: 5", "count: true"),
+        ("count: 5", 'count: "5"'),
+        ("window_seconds: 60", "window_seconds: false"),
+        ("window_seconds: 60", "window_seconds: 1.5"),
+    ],
+)
+def test_threshold_rejects_non_integer_values(old_value, new_value):
+    invalid_yaml = VALID_YAML.replace(old_value, new_value)
+
+    with pytest.raises(RuleValidationError):
+        validate_rule_definition(invalid_yaml, "DET-001")

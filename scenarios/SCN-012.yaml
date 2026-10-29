@@ -1,0 +1,99 @@
+﻿scenario_id: SCN-012
+name: SSH Failures Split Across Source IPs
+description: >
+  Verify that SSH failures from different source IPs are not
+  combined to trigger DET-002.
+expected_rule_id: DET-002
+expected_host: UBUNTU-LAB
+expected_detection: false
+
+events:
+  - seconds_before_evaluation: 100
+    event_type: ssh_authentication_failure
+    event_data:
+      source_ip: 203.0.113.50
+      user: root
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 90
+    event_type: ssh_authentication_failure
+    event_data:
+      source_ip: 203.0.113.50
+      user: root
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 80
+    event_type: ssh_authentication_failure
+    event_data:
+      source_ip: 203.0.113.50
+      user: root
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 70
+    event_type: ssh_authentication_failure
+    event_data:
+      source_ip: 203.0.113.50
+      user: root
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 60
+    event_type: ssh_authentication_failure
+    event_data:
+      source_ip: 203.0.113.50
+      user: root
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 50
+    event_type: ssh_authentication_failure
+    event_data:
+      source_ip: 203.0.113.50
+      user: root
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 40
+    event_type: ssh_authentication_failure
+    event_data:
+      source_ip: 203.0.113.50
+      user: root
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 30
+    event_type: ssh_authentication_failure
+    event_data:
+      source_ip: 203.0.113.50
+      user: root
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 20
+    event_type: ssh_authentication_failure
+    event_data:
+      source_ip: 203.0.113.50
+      user: root
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 10
+    event_type: ssh_authentication_failure
+    event_data:
+      source_ip: 198.51.100.77
+      user: root
+      status: failure
+    raw_event:
+      source: scenario-library

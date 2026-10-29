@@ -49,8 +49,10 @@ def get_regression_report(
             status = "UNTESTED"
         elif latest_run.status == "FAIL":
             status = "REGRESSION"
-        else:
+        elif latest_run.status == "PASS":
             status = "HEALTHY"
+        else:
+            status = "UNKNOWN"
 
         items.append(
             RuleRegressionItem(
@@ -83,6 +85,10 @@ def get_regression_report(
         ),
         untested_rules=sum(
             item.regression_status == "UNTESTED"
+            for item in items
+        ),
+        unknown_rules=sum(
+            item.regression_status == "UNKNOWN"
             for item in items
         ),
         rules=items,

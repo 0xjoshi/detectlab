@@ -1,0 +1,63 @@
+﻿scenario_id: SCN-009
+name: Password Spraying Repeated Users
+description: >
+  Verify that six failed authentication events involving only
+  three distinct users do not trigger DET-003.
+expected_rule_id: DET-003
+expected_host: WIN11-LAB
+expected_detection: false
+
+events:
+  - seconds_before_evaluation: 250
+    event_type: authentication_failure
+    event_data:
+      user: alice
+      source_ip: 198.51.100.77
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 220
+    event_type: authentication_failure
+    event_data:
+      user: bob
+      source_ip: 198.51.100.77
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 190
+    event_type: authentication_failure
+    event_data:
+      user: carol
+      source_ip: 198.51.100.77
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 160
+    event_type: authentication_failure
+    event_data:
+      user: alice
+      source_ip: 198.51.100.77
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 130
+    event_type: authentication_failure
+    event_data:
+      user: bob
+      source_ip: 198.51.100.77
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 100
+    event_type: authentication_failure
+    event_data:
+      user: carol
+      source_ip: 198.51.100.77
+      status: failure
+    raw_event:
+      source: scenario-library

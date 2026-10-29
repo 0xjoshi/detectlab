@@ -98,7 +98,7 @@ def evaluate_enabled_rules(
         stored_events = (
             db.query(Event, Host.hostname)
             .join(Host, Event.host_id == Host.id)
-            .filter(Event.timestamp > cutoff_for_query)
+            .filter(Event.timestamp >= cutoff_for_query)
             .all()
         )
 

@@ -1,0 +1,54 @@
+﻿scenario_id: SCN-015
+name: Successful SSH Logins Do Not Trigger Brute Force Rule
+description: >
+  Verify that successful SSH logins do not trigger DET-002,
+  which detects repeated failed SSH authentication attempts.
+expected_rule_id: DET-002
+expected_host: UBUNTU-LAB
+expected_detection: false
+
+events:
+  - seconds_before_evaluation: 50
+    event_type: ssh_authentication_success
+    event_data:
+      source_ip: 203.0.113.50
+      user: root
+      status: success
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 40
+    event_type: ssh_authentication_success
+    event_data:
+      source_ip: 203.0.113.50
+      user: root
+      status: success
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 30
+    event_type: ssh_authentication_success
+    event_data:
+      source_ip: 203.0.113.50
+      user: root
+      status: success
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 20
+    event_type: ssh_authentication_success
+    event_data:
+      source_ip: 203.0.113.50
+      user: root
+      status: success
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 10
+    event_type: ssh_authentication_success
+    event_data:
+      source_ip: 203.0.113.50
+      user: root
+      status: success
+    raw_event:
+      source: scenario-library

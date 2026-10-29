@@ -180,7 +180,7 @@ def test_event_exactly_at_window_start_is_excluded(db):
     )
     make_rule(db, window_seconds=60, count=3)
 
-    # The event exactly 60 seconds before evaluation is outside the window.
+    # The event exactly 60 seconds before evaluation is excluded.
     for seconds_ago in (60, 30, 10):
         add_event(db, evaluation_time - timedelta(seconds=seconds_ago))
 
@@ -305,3 +305,64 @@ def test_rules_with_different_windows_use_their_own_windows(db):
     }
     assert "DET-SHORT" not in detections_by_rule
     assert detections_by_rule["DET-LONG"]["count"] == 3
+
+def test_invalid_threshold_rule_is_skipped_while_valid_rule_runs(db):
+    evaluation_time = datetime(
+        2026, 10, 23, 12, 0, tzinfo=timezone.utc
+    )
+
+    # This rule has valid YAML but an invalid threshold count.
+    make_rule(db, rule_id="DET-BAD-COUNT", count=0)
+
+    # This rule should still evaluate successfully.
+    make_rule(db, rule_id="DET-GOOD", count=3)
+
+    for seconds_ago in (30, 20, 10):
+        add_event(
+            db,
+            evaluation_time - timedelta(seconds=seconds_ago),
+        )
+
+    result = evaluate_enabled_rules(db, evaluation_time)
+
+    assert result["rules_evaluated"] == 1
+    assert len(result["rules_skipped"]) == 1
+    assert result["rules_skipped"][0]["rule_id"] == "DET-BAD-COUNT"
+    assert "count" in result["rules_skipped"][0]["reason"].lower()
+
+    assert len(result["detections"]) == 1
+    assert result["detections"][0]["rule_id"] == "DET-GOOD"
+    assert result["detections"][0]["count"] == 3
+
+
+def test_future_dated_events_do_not_trigger_detection(db):
+    evaluation_time = datetime(
+        2026, 10, 23, 12, 0, tzinfo=timezone.utc
+    )
+    make_rule(db, count=3)
+
+    # Two events are within the window; one occurs after evaluation time.
+    for event_time in (
+        evaluation_time - timedelta(seconds=20),
+        evaluation_time - timedelta(seconds=10),
+        evaluation_time + timedelta(seconds=5),
+    ):
+        add_event(db, event_time)
+
+    result = evaluate_enabled_rules(db, evaluation_time)
+
+    assert result["rules_evaluated"] == 1
+    assert result["detections"] == []
+
+
+def test_enabled_rule_with_no_stored_events_returns_no_detections(db):
+    evaluation_time = datetime(
+        2026, 10, 23, 12, 0, tzinfo=timezone.utc
+    )
+    make_rule(db)
+
+    result = evaluate_enabled_rules(db, evaluation_time)
+
+    assert result["rules_evaluated"] == 1
+    assert result["rules_skipped"] == []
+    assert result["detections"] == []

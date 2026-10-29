@@ -1,0 +1,59 @@
+﻿scenario_id: SCN-026
+name: Failed Logins At Evaluation Time
+description: >
+  Verify that five authentication failures, including an event
+  exactly at evaluation time, trigger DET-001.
+expected_rule_id: DET-001
+expected_host: WIN11-LAB
+expected_detection: true
+
+events:
+  - seconds_before_evaluation: 40
+    event_type: authentication_failure
+    event_data:
+      host: WIN11-LAB
+      user: evaluation-time-user
+      source_ip: 198.51.100.130
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 30
+    event_type: authentication_failure
+    event_data:
+      host: WIN11-LAB
+      user: evaluation-time-user
+      source_ip: 198.51.100.130
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 20
+    event_type: authentication_failure
+    event_data:
+      host: WIN11-LAB
+      user: evaluation-time-user
+      source_ip: 198.51.100.130
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 10
+    event_type: authentication_failure
+    event_data:
+      host: WIN11-LAB
+      user: evaluation-time-user
+      source_ip: 198.51.100.130
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 0
+    event_type: authentication_failure
+    event_data:
+      host: WIN11-LAB
+      user: evaluation-time-user
+      source_ip: 198.51.100.130
+      status: failure
+    raw_event:
+      source: scenario-library

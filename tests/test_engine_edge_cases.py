@@ -114,3 +114,81 @@ def test_evaluation_is_repeatable_and_does_not_modify_events():
 def test_invalid_rule_configuration_is_rejected(overrides):
     with pytest.raises(ValueError):
         evaluate_threshold(make_rule(**overrides), [], NOW)
+
+def test_event_exactly_at_window_start_is_excluded():
+    events = [
+        make_event(60),  # Exactly at the exclusive start boundary
+        make_event(30),
+        make_event(10),
+    ]
+
+    detections = evaluate_threshold(
+        make_rule(count=3, window=60), events, NOW
+    )
+
+    assert detections == []
+
+
+def test_future_events_are_excluded():
+    events = [
+        make_event(-1),  # One second after evaluation time
+        make_event(10),
+        make_event(20),
+    ]
+
+    detections = evaluate_threshold(
+        make_rule(count=3, window=60), events, NOW
+    )
+
+    assert detections == []
+
+
+def test_event_missing_grouping_field_is_ignored():
+    events = [
+        make_event(5),
+        make_event(10),
+        make_event(15),
+    ]
+
+    # This event has no user field, which is required by group_by.
+    events.append({
+        "host": "H1",
+        "timestamp": NOW - timedelta(seconds=20),
+        "event_type": "login_failure",
+        "event_data": {},
+    })
+
+    detections = evaluate_threshold(
+        make_rule(count=3, window=60), events, NOW
+    )
+
+    assert len(detections) == 1
+    assert detections[0]["count"] == 3
+    assert detections[0]["group"] == {
+        "host": "H1",
+        "user": "alice",
+    }
+
+
+def test_same_user_on_different_hosts_is_not_combined():
+    events = [
+        make_event(5, host="H1"),
+        make_event(10, host="H1"),
+        make_event(15, host="H2"),
+        make_event(20, host="H2"),
+    ]
+
+    detections = evaluate_threshold(
+        make_rule(count=3, window=60), events, NOW
+    )
+
+    assert detections == []
+
+def test_duplicate_events_each_count_toward_standard_threshold():
+    event = make_event(5)
+    events = [deepcopy(event), deepcopy(event), deepcopy(event)]
+
+    detections = evaluate_threshold(make_rule(count=3), events, NOW)
+
+    assert len(detections) == 1
+    assert detections[0]["count"] == 3

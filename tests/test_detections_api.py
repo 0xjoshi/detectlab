@@ -1,3 +1,4 @@
+
 import pytest
 from datetime import datetime, timedelta, timezone
 
@@ -74,7 +75,10 @@ def client():
             )
         )
 
-        now = datetime(2026, 10, 21, 5, 30, tzinfo=timezone.utc)
+        now = datetime(
+            2026, 10, 21, 5, 30, tzinfo=timezone.utc
+        )
+
         for seconds_ago in (20, 10, 0):
             db.add(
                 Event(
@@ -134,6 +138,7 @@ def test_evaluate_endpoint_does_not_persist_results(client):
     assert response.status_code == 200
     assert len(response.json()["detections"]) == 1
 
+
 def test_validate_endpoint_returns_pass_when_rule_and_host_match(client):
     response = client.post(
         "/api/v1/detections/validate",
@@ -182,3 +187,45 @@ def test_validate_endpoint_rejects_naive_evaluation_time(client):
     )
 
     assert response.status_code == 422
+
+
+def test_evaluate_endpoint_rejects_missing_evaluation_time(client):
+    response = client.post(
+        "/api/v1/detections/evaluate",
+        json={},
+    )
+
+    assert response.status_code == 422
+
+
+def test_validate_endpoint_returns_fail_when_host_does_not_match(client):
+    response = client.post(
+        "/api/v1/detections/validate",
+        json={
+            "evaluation_time": "2026-10-21T05:30:00Z",
+            "expected_rule_id": "DET-001",
+            "expected_host": "UBUNTU-LAB",
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "FAIL"
+    assert data["matched"] is False
+    assert data["expected_rule_id"] == "DET-001"
+    assert data["expected_host"] == "UBUNTU-LAB"
+
+
+def test_evaluate_endpoint_accepts_timezone_offset(client):
+    response = client.post(
+        "/api/v1/detections/evaluate",
+        json={
+            "evaluation_time": "2026-10-21T11:00:00+05:30",
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["detections"]) == 1
+    assert data["detections"][0]["rule_id"] == "DET-001"
+    assert data["detections"][0]["count"] == 3

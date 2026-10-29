@@ -46,7 +46,7 @@ def test_every_shipped_scenario_passes_against_shipped_rules(db, scenario_id):
     result = run_library_scenario(db, scenario_id)
 
     assert result["status"] == "PASS"
-    assert result["matched"] is True
+    assert result["matched"] is result["expected_detection"]
 
 
 def det_002():

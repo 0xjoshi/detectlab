@@ -1,0 +1,59 @@
+﻿scenario_id: SCN-028
+name: Password Spraying At Evaluation Time
+description: >
+  Verify that five distinct usernames, including an authentication
+  failure exactly at evaluation time, trigger DET-003.
+expected_rule_id: DET-003
+expected_host: WIN11-LAB
+expected_detection: true
+
+events:
+  - seconds_before_evaluation: 240
+    event_type: authentication_failure
+    event_data:
+      host: WIN11-LAB
+      user: eval-user-1
+      source_ip: 198.51.100.140
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 180
+    event_type: authentication_failure
+    event_data:
+      host: WIN11-LAB
+      user: eval-user-2
+      source_ip: 198.51.100.140
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 120
+    event_type: authentication_failure
+    event_data:
+      host: WIN11-LAB
+      user: eval-user-3
+      source_ip: 198.51.100.140
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 60
+    event_type: authentication_failure
+    event_data:
+      host: WIN11-LAB
+      user: eval-user-4
+      source_ip: 198.51.100.140
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 0
+    event_type: authentication_failure
+    event_data:
+      host: WIN11-LAB
+      user: eval-user-5
+      source_ip: 198.51.100.140
+      status: failure
+    raw_event:
+      source: scenario-library

@@ -1,0 +1,44 @@
+﻿scenario_id: SCN-017
+name: Failed Logins Missing Username
+description: >
+  Verify that authentication failures without a username do not
+  trigger DET-001, which groups events by host and user.
+expected_rule_id: DET-001
+expected_host: WIN11-LAB
+expected_detection: false
+
+events:
+  - seconds_before_evaluation: 50
+    event_type: authentication_failure
+    event_data:
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 40
+    event_type: authentication_failure
+    event_data:
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 30
+    event_type: authentication_failure
+    event_data:
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 20
+    event_type: authentication_failure
+    event_data:
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 10
+    event_type: authentication_failure
+    event_data:
+      status: failure
+    raw_event:
+      source: scenario-library

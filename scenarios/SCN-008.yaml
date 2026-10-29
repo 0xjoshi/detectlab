@@ -1,0 +1,54 @@
+﻿scenario_id: SCN-008
+name: Password Spraying Below Distinct User Threshold
+description: >
+  Verify that failed logins involving only four distinct users
+  from the same source IP within 300 seconds do not trigger DET-003.
+expected_rule_id: DET-003
+expected_host: WIN11-LAB
+expected_detection: false
+
+events:
+  - seconds_before_evaluation: 240
+    event_type: authentication_failure
+    event_data:
+      user: alice
+      source_ip: 198.51.100.77
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 200
+    event_type: authentication_failure
+    event_data:
+      user: bob
+      source_ip: 198.51.100.77
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 160
+    event_type: authentication_failure
+    event_data:
+      user: carol
+      source_ip: 198.51.100.77
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 120
+    event_type: authentication_failure
+    event_data:
+      user: dave
+      source_ip: 198.51.100.77
+      status: failure
+    raw_event:
+      source: scenario-library
+
+  - seconds_before_evaluation: 80
+    event_type: authentication_failure
+    event_data:
+      user: alice
+      source_ip: 198.51.100.77
+      status: failure
+    raw_event:
+      source: scenario-library
