@@ -397,7 +397,7 @@ and the /coverage and /regressions output.
 
 ## Author
 
-**Yogesh Joshi**: security detection engineering and backend development
+**Yogesh Joshi**: SOC | Detection Engineering | Security Analysis
 
 - GitHub: [@0xjoshi](https://github.com/0xjoshi)
 - Repository: [github.com/0xjoshi/detectlab](https://github.com/0xjoshi/detectlab)
